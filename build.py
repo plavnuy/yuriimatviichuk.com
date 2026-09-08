@@ -362,7 +362,10 @@ def render(lang, page, prefix):
 \t<script type="application/ld+json">
 {ld_json}
 \t</script>
-\t<link rel="icon" href="{prefix}img/logo.png" type="image/png" />
+\t<link rel="icon" href="{prefix}favicon.ico" sizes="any" />
+\t<link rel="icon" href="{prefix}img/favicon-32.png" type="image/png" sizes="32x32" />
+\t<link rel="icon" href="{prefix}img/favicon-16.png" type="image/png" sizes="16x16" />
+\t<link rel="apple-touch-icon" href="{prefix}img/apple-touch-icon.png" />
 \t<link rel="preload" href="{prefix}fonts/inter-400-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
 \t<link rel="preload" href="{prefix}fonts/inter-600-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
 \t<link rel="stylesheet" href="{prefix}inc/fonts.css?v={CSS_VERSION}" />

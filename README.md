@@ -9,6 +9,7 @@ interior design. Published with GitHub Pages from `docs/`.
 tpl/         texts and captions per language (en, uk, fr, nl) — edit here
 docs/pix/    photographs; galleries are built from these folders
 docs/inc/    stylesheet
+docs/img/    logotype and favicons (monogram.png is the master image)
 build.py     generator: tpl/ + docs/pix/ -> HTML in docs/
 legacy-php/  the original 2015 PHP version, kept for reference
 ```
