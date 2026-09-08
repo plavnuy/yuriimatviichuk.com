@@ -129,15 +129,6 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .intro p { margin: 0 0 1em; }
 .intro > div > :last-child { margin-bottom: 0; }
 
-/* текст на главной (биография художника) */
-.essay { padding-bottom: clamp(2.5rem, 6vw, 4rem); }
-.essay .single { max-width: 72ch; margin: 0 auto; }
-.essay p, .essay li { line-height: 1.7; }
-.essay .lead { margin: 0; color: var(--ink); }
-.essay ul { padding-left: 1.2em; }
-.essay li { margin-bottom: .8em; }
-.essay .signature { margin-top: 2rem; text-align: right; color: var(--ink-soft); }
-
 /* ---------- галерея ---------- */
 
 .gallery {
@@ -168,15 +159,29 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 	.gallery--captions figcaption { padding-top: .25rem; }
 }
 
-/* ---------- подвал ---------- */
+/* ---------- подвал: биография мелким кеглем, рядом почта ---------- */
 
 .site-footer { border-top: 1px solid var(--line); margin-top: auto; }
 .site-footer__inner {
-	display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 1.25rem 3rem;
+	align-items: start;
 	padding-block: 2rem;
-	font-size: .8rem; color: var(--ink-soft);
+	font-size: .8rem; line-height: 1.65; color: var(--ink-soft);
+}
+.site-footer__bio { max-width: 80ch; }
+.site-footer__bio p { margin: 0; }
+.site-footer__meta {
+	display: flex; flex-direction: column; align-items: flex-end; gap: .3rem;
+	text-align: right; white-space: nowrap;
 }
 .site-footer a { text-decoration: none; border-bottom: 1px solid var(--line); }
+
+@media (max-width: 45rem) {
+	.site-footer__inner { grid-template-columns: minmax(0, 1fr); }
+	.site-footer__meta { align-items: flex-start; text-align: left; }
+}
 
 /* ---------- 404 ---------- */
 

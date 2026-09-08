@@ -9,6 +9,7 @@
 Оформление живёт в docs/inc/main.css и этим скриптом не перезаписывается.
 """
 
+import hashlib
 import html as html_mod
 import re
 import shutil
@@ -24,6 +25,7 @@ PAGES = ["neobarocco", "askoldova", "modern", "renaissance",
          "functionalism", "art", "valera", "ira"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
 EMAIL = "uuuram@gmail.com"
+CSS_VERSION = ""            # заполняется в main() хешем файлов оформления
 REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
 
 SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
@@ -177,6 +179,9 @@ def render(lang, page, prefix):
     site_title = txt.get("title", "")
     name, _, tagline = site_title.partition(". ")
 
+    bio = prepare(read_content(lang, "bio"), prefix, lang)
+    bio = "\n".join("\t\t\t" + line.strip() for line in bio.splitlines() if line.strip())
+
     body = []
     if page == "":
         body.append(f'<h1 class="visually-hidden">{site_title}</h1>')
@@ -191,9 +196,6 @@ def render(lang, page, prefix):
                 f'\t\t<span>{title}</span>\n\t</a>')
         body.append('<div class="wrap">\n<div class="projects">\n'
                     + "\n".join(tiles) + '\n</div>\n</div>')
-        essay = prepare(read_content(lang, "index"), prefix, lang)
-        if has_text(essay):
-            body.append(f'<section class="essay">\n<div class="wrap">\n{essay}\n</div>\n</section>')
         doc_title = site_title
     else:
         show_text, _ = GALLERIES[page]
@@ -231,8 +233,8 @@ def render(lang, page, prefix):
 \t<meta property="og:image" content="{prefix}pix/interior1.jpg" />
 {alternates}
 \t<link rel="icon" href="{prefix}img/logo.png" type="image/png" />
-\t<link rel="stylesheet" href="{prefix}inc/fonts.css" />
-\t<link rel="stylesheet" href="{prefix}inc/main.css" />
+\t<link rel="stylesheet" href="{prefix}inc/fonts.css?v={CSS_VERSION}" />
+\t<link rel="stylesheet" href="{prefix}inc/main.css?v={CSS_VERSION}" />
 </head>
 <body>
 <a class="skip-link" href="#content">{SKIP_LINK[lang]}</a>
@@ -249,8 +251,13 @@ def render(lang, page, prefix):
 </main>
 <footer class="site-footer">
 \t<div class="wrap site-footer__inner">
-\t\t<span>© {name}</span>
-\t\t<a href="mailto:{EMAIL}">{EMAIL}</a>
+\t\t<div class="site-footer__bio">
+{bio}
+\t\t</div>
+\t\t<div class="site-footer__meta">
+\t\t\t<span>© {name}</span>
+\t\t\t<a href="mailto:{EMAIL}">{EMAIL}</a>
+\t\t</div>
 \t</div>
 </footer>
 </body>
@@ -295,7 +302,21 @@ def render_404():
 """
 
 
+def css_version():
+    """Короткий хеш от файлов оформления — подставляется в адрес CSS, чтобы
+    браузер не показывал старую версию из кэша после правок."""
+    h = hashlib.md5()
+    for name in ("fonts.css", "main.css"):
+        f = OUT / "inc" / name
+        if f.is_file():
+            h.update(f.read_bytes())
+    return h.hexdigest()[:8]
+
+
 def main():
+    global CSS_VERSION
+    CSS_VERSION = css_version()
+
     for name in LANGS + ["ru", "es", "index.html", "404.html"]:
         target = OUT / name
         if target.is_dir():
