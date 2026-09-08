@@ -14,7 +14,11 @@
 
 	--font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-	--wrap: 1180px;
+	/* колонка сайта — 1000px: ровно ширина самой большой фотографии в галереях,
+	   поэтому плитки, фото и текст стоят в одних границах и ничего не растягивается */
+	--content: 1000px;
+	--wrap: calc(var(--content) + 6rem);
+	--measure: 36rem;          /* ширина текстовой колонки — одна на весь сайт */
 	--pad: clamp(1.25rem, 4vw, 3rem);
 	--radius: 3px;
 	--shadow: 0 1px 2px rgba(28, 27, 25, .06), 0 14px 40px -18px rgba(28, 27, 25, .35);
@@ -58,7 +62,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 .skip-link:focus { left: .5rem; top: .5rem; }
 
-/* ---------- шапка: подпись-логотип и языки ---------- */
+/* ---------- шапка: логотип слева, телефон и почта справа ---------- */
 
 .site-header {
 	position: sticky; top: 0; z-index: 10;
@@ -68,13 +72,23 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 
 .site-header__inner {
-	display: flex; align-items: center; justify-content: space-between;
-	gap: 1rem 1.5rem;
+	/* flex-wrap, а не точка перелома: контакты сами уходят строкой ниже,
+	   когда рядом с логотипом им уже не хватает места */
+	display: flex; flex-wrap: wrap; align-items: center;
+	gap: .35rem 1.75rem;
 	padding-block: .75rem;
 }
 
 .brand { display: inline-flex; }
 .brand img { display: block; height: 33px; width: auto; }
+
+/* телефон и почта — вверху справа */
+.contacts {
+	margin-left: auto;                     /* всегда у правого края своей строки */
+	display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .2rem 1.25rem;
+	font-size: .8rem;
+}
+.contacts a { text-decoration: none; border-bottom: 1px solid var(--line); white-space: nowrap; }
 
 .langs { display: flex; gap: .9rem; }
 .langs a {
@@ -88,8 +102,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 
 .projects {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(15rem, 20rem));
-	justify-content: start;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: clamp(1.5rem, 3.5vw, 2.5rem);
 	padding-block: clamp(2rem, 5vw, 3.5rem);
 	list-style: none; margin: 0;
@@ -109,6 +122,9 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 .project:hover span { color: var(--accent); }
 
+@media (max-width: 60rem) { .projects { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 34rem) { .projects { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---------- страница проекта ---------- */
 
 .page-head { padding-block: clamp(1.6rem, 4.5vw, 2.75rem) clamp(.75rem, 2vw, 1.25rem); }
@@ -122,7 +138,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	gap: 1em;
-	max-width: 36rem;
+	max-width: var(--measure);
 	padding-bottom: clamp(2rem, 5vw, 3.5rem);
 	color: #4b473f;
 }
@@ -163,14 +179,25 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .site-footer { border-top: 1px solid var(--line); margin-top: auto; }
 .site-footer__inner {
 	display: grid;
-	gap: 1rem;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 1.25rem 3rem;
+	align-items: end;
+	min-height: 5.3rem;
 	padding-block: 2rem;
 	font-size: .8rem; line-height: 1.65; color: var(--ink-soft);
 }
-.site-footer__bio { max-width: 80ch; }
+.site-footer__bio { max-width: var(--measure); }
 .site-footer__bio p { margin: 0; }
-.site-footer__meta { display: flex; flex-wrap: wrap; gap: .3rem 1.75rem; }
+.site-footer__meta {
+	justify-self: end; align-self: end;
+	display: flex; flex-direction: column; align-items: flex-end; gap: .6rem;
+	text-align: right; white-space: nowrap;
+}
 .site-footer a { text-decoration: none; border-bottom: 1px solid var(--line); }
+
+@media (max-width: 45rem) {
+	.site-footer__inner { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ---------- 404 ---------- */
 

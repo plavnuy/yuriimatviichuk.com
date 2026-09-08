@@ -25,6 +25,8 @@ PAGES = ["neobarocco", "askoldova", "modern", "renaissance",
          "functionalism", "art", "valera", "ira"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
 EMAIL = "uuuram@gmail.com"
+PHONE = "+38 067 930 31 20"       # как показывать
+PHONE_TEL = "+380679303120"       # как звонить
 CSS_VERSION = ""            # заполняется в main() хешем файлов оформления
 REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
 
@@ -241,8 +243,9 @@ def render(lang, page, prefix):
 <header class="site-header">
 \t<div class="wrap site-header__inner">
 \t\t<a class="brand" href="{prefix}{lang}/"><img src="{prefix}img/logo.png" width="237" height="46" alt="{html_mod.escape(name, quote=True)}" /></a>
-\t\t<div class="langs">
-{langs}
+\t\t<div class="contacts">
+\t\t\t<a href="tel:{PHONE_TEL}">{PHONE}</a>
+\t\t\t<a href="mailto:{EMAIL}">{EMAIL}</a>
 \t\t</div>
 \t</div>
 </header>
@@ -255,8 +258,10 @@ def render(lang, page, prefix):
 {bio}
 \t\t</div>
 \t\t<div class="site-footer__meta">
+\t\t\t<div class="langs">
+{langs}
+\t\t\t</div>
 \t\t\t<span>© {name}</span>
-\t\t\t<a href="mailto:{EMAIL}">{EMAIL}</a>
 \t\t</div>
 \t</div>
 </footer>
