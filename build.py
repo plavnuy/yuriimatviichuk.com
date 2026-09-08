@@ -179,8 +179,7 @@ def render(lang, page, prefix):
 
     body = []
     if page == "":
-        body.append(f'<section class="wrap hero">\n\t<h1>{name}</h1>\n'
-                    f'\t<p>{tagline}</p>\n</section>')
+        body.append(f'<h1 class="visually-hidden">{site_title}</h1>')
         tiles = []
         for slug, img, key in TILES:
             title = txt.get(key, "")
@@ -210,10 +209,7 @@ def render(lang, page, prefix):
             body.append(gallery)
         doc_title = f"{heading} — {site_title}" if heading else site_title
 
-    current = ' aria-current="page"'
-    nav = (f'\t\t\t<a href="{prefix}{lang}/"'
-           + (current if page == "" else "")
-           + f'>{txt.get("projects", "")}</a>')
+    current = ' aria-current="true"'
     langs = "\n".join(
         f'\t\t\t<a href="{prefix}{l}/" hreflang="{l}" lang="{l}"'
         + (current if l == lang else "")
@@ -243,9 +239,6 @@ def render(lang, page, prefix):
 <header class="site-header">
 \t<div class="wrap site-header__inner">
 \t\t<a class="brand" href="{prefix}{lang}/"><img src="{prefix}img/logo.png" width="237" height="46" alt="{html_mod.escape(name, quote=True)}" /></a>
-\t\t<nav class="nav">
-{nav}
-\t\t</nav>
 \t\t<div class="langs">
 {langs}
 \t\t</div>
@@ -280,9 +273,8 @@ def render_404():
 \t<style>
 \t\tbody {{ margin: 0; min-height: 100vh; display: grid; place-items: center;
 \t\t\tbackground: #faf9f7; color: #1c1b19; text-align: center; padding: 2rem;
-\t\t\tfont: 400 1rem/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
-\t\th1 {{ margin: 0 0 .75rem; font-size: clamp(2.5rem, 10vw, 4rem); font-weight: 600;
-\t\t\tletter-spacing: -.03em; line-height: 1; }}
+\t\t\tfont: 400 .9375rem/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
+\t\th1 {{ margin: 0 0 .75rem; font: 500 clamp(2.25rem, 9vw, 3.5rem)/1 Georgia, 'Times New Roman', serif; }}
 \t\tp {{ margin: 0; color: #6b675f; }}
 \t\ta {{ color: #8c5a3c; }}
 \t</style>
