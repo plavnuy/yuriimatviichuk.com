@@ -1,0 +1,63 @@
+HTML {height: 100%;}
+
+BODY {background: #eee url('../img/noise.png') 0 0 repeat;}
+BODY {margin: 0; padding: 0;}
+BODY {font: normal 12px sans-serif; height: 100%;}
+
+#ALL {position: relative; max-width: 1250px; margin: 0 auto; min-height: 100%; padding: 1px 0}
+
+A IMG {border: none;}
+IMG {vertical-align: middle;}
+
+H1 {font: normal 40px serif; margin: 100px 0px 40px;}
+H2 {margin: 3ex 2ex 1ex 2ex;}
+
+.main {color: #555; margin: 80px 0 0 auto; width: 100%;}
+.main A {color: #666;}
+.list_image,
+.main_image {text-align: right; padding: 0;}
+.list_text,
+.main_text {text-align: left; vertical-align: bottom; width: 15%; padding: 20px 10px 30px 30px;}
+.list_text .text,
+.main_text .text {max-width: 30ex;}
+.list_text {padding-bottom: 110px;}
+.list_image {padding-bottom: 100px;}
+.list_image A {display: block; padding: 10px 0;}
+.list_image IMG {-moz-box-shadow: 0 0 15px #aaa;}
+
+.ava {-moz-box-shadow: 0 0 15px #AAAAAA; margin: 1ex 0;}
+
+.signature {text-align: right; font-style: italic;}
+
+.block_text {line-height: 170%; padding: 0 0 4ex; min-width: 500px; vertical-align: top; text-align: right;}
+.col1,
+.col2,
+.col3 {width: 27%; display: inline-block; margin-left: 5%; text-align: left; vertical-align: top;}
+.col2,
+.col3 {}
+.far {padding-top: 100px;}
+.single {padding-top: 30px; width: 88ex; text-align: justify; margin: 0 12px 0 auto;}
+
+.superheader {background: #bfbfbf; border-bottom: 1px solid #cccccc; padding: 1px 10px 3px 0; height: 18px;}
+.superheader .like {float: right;}
+.superheader .lang {float: right; padding: 0 0 2px 0; margin-right: 30px;}
+.superheader .lang A {color: #e2e2e2; text-transform: capitalize; font: bold 9px sans-serif;}
+
+.header {position: absolute; left: 85%}
+.header .logo {position: absolute; margin-left: -238px; top: 0; padding: 35px 0 0 0;}
+.header .menu {position: absolute; left: 15%; top: 0; margin-left: -2px; width: 25ex;}
+.menu {font-size: 11px; padding: 45px 0 0 30px; background: transparent url('../img/grooveq.png') 0 0 repeat-y;}
+.menu A {color: #666;}
+.menu A.current {font-weight: bold; text-decoration: none; cursor: default;}
+
+.footer {height: 50px; margin-top: 50px; background: #bfbfbf; border-top: 1px solid #b5b5b5; border-bottom: 1px solid #cccccc;}
+
+.footer .lang   {margin: 25px 12px;}
+.lang A {color: #666; font-size: 11px; margin-left: 2ex;}
+.lang A:hover {color: #777; text-decoration: underline;}
+
+TABLE.mosaic {border-collapse: collapse; margin: 0 0 0 auto;} 
+TABLE.mosaic TD { padding: 10px 10px 20px 10px;    text-align: center;    vertical-align: top;    width: 300px;} 
+TABLE.mosaic A:hover {color: #333;} 
+TABLE.mosaic A IMG {border: 1px solid #ccc; margin-bottom: 1ex; opacity: 0.88;} 
+TABLE.mosaic A:hover IMG {border: 1px solid #666; opacity: 1;} 
