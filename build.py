@@ -21,7 +21,7 @@ OUT = ROOT / "docs"
 
 LANGS = ["en", "uk", "fr", "nl"]          # первый — базовый; es отключён, как и в исходной версии
 PAGES = ["neobarocco", "askoldova", "modern", "renaissance",
-         "functionalism", "art", "valera", "ira", "contact"]
+         "functionalism", "art", "valera", "ira"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
 EMAIL = "uuuram@gmail.com"
 REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
@@ -39,7 +39,6 @@ GALLERIES = {
     "art":           (True,  [("pix/art", "art")]),
     "valera":        (False, [("pix/valera", "valera")]),
     "ira":           (False, [("pix/ira", "ira")]),
-    "contact":       (True,  []),
 }
 
 # плитки на главной: страница, фото, ключ подписи в text.ini
@@ -199,26 +198,22 @@ def render(lang, page, prefix):
         doc_title = site_title
     else:
         show_text, _ = GALLERIES[page]
-        heading = header or txt.get("contacts", "") if page == "contact" else header
+        heading = header
         if heading:
             body.append(f'<div class="wrap page-head">\n\t<h1>{heading}</h1>\n</div>')
         if show_text:
             content = prepare(read_content(lang, page), prefix, lang)
             if has_text(content):
-                wrapper = "people" if page == "contact" else "intro"
-                body.append(f'<div class="wrap">\n<div class="{wrapper}">\n{content}\n</div>\n</div>')
+                body.append(f'<div class="wrap">\n<div class="intro">\n{content}\n</div>\n</div>')
         gallery = gallery_html(page, lang, prefix, heading)
         if gallery:
             body.append(gallery)
         doc_title = f"{heading} — {site_title}" if heading else site_title
 
     current = ' aria-current="page"'
-    nav = "\n".join(
-        f'\t\t\t<a href="{prefix}{lang}/{slug}"'
-        + (current if page == cur else "")
-        + f'>{label}</a>'
-        for slug, cur, label in (("", "", txt.get("projects", "")),
-                                 ("contact/", "contact", txt.get("contacts", ""))))
+    nav = (f'\t\t\t<a href="{prefix}{lang}/"'
+           + (current if page == "" else "")
+           + f'>{txt.get("projects", "")}</a>')
     langs = "\n".join(
         f'\t\t\t<a href="{prefix}{l}/" hreflang="{l}" lang="{l}"'
         + (current if l == lang else "")
@@ -285,8 +280,9 @@ def render_404():
 \t<style>
 \t\tbody {{ margin: 0; min-height: 100vh; display: grid; place-items: center;
 \t\t\tbackground: #faf9f7; color: #1c1b19; text-align: center; padding: 2rem;
-\t\t\tfont: 400 1.0625rem/1.65 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
-\t\th1 {{ margin: 0 0 .75rem; font: 500 clamp(3rem, 12vw, 5rem)/1 Georgia, 'Times New Roman', serif; }}
+\t\t\tfont: 400 1rem/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
+\t\th1 {{ margin: 0 0 .75rem; font-size: clamp(2.5rem, 10vw, 4rem); font-weight: 600;
+\t\t\tletter-spacing: -.03em; line-height: 1; }}
 \t\tp {{ margin: 0; color: #6b675f; }}
 \t\ta {{ color: #8c5a3c; }}
 \t</style>

@@ -1,5 +1,6 @@
 /* Сайт Юрия Матвийчука — оформление.
-   Шрифты: Inter (текст) + Cormorant Garamond (заголовки), локальные копии в docs/fonts/.
+   Шрифт один: Inter (локальная копия в docs/fonts/), заголовки — он же,
+   крупнее и плотнее по трекингу.
    Вёрстка адаптивная: одна колонка на телефоне, сетки на планшете и десктопе.
    Правится вручную; build.py этот файл не перезаписывает. */
 
@@ -11,8 +12,7 @@
 	--line: #e3dfd7;
 	--accent: #8c5a3c;
 
-	--font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-	--font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+	--font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
 	--wrap: 1180px;
 	--pad: clamp(1.25rem, 4vw, 3rem);
@@ -28,10 +28,9 @@ body {
 	margin: 0;
 	background: var(--paper);
 	color: var(--ink);
-	font-family: var(--font-body);
-	/* базовый размер 17→19px вместо прежних 12px */
-	font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem);
-	line-height: 1.65;
+	font-family: var(--font);
+	font-size: clamp(1rem, .96rem + .2vw, 1.0625rem);   /* 16 → 17px */
+	line-height: 1.6;
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
 }
@@ -44,10 +43,9 @@ a:hover { color: var(--accent); text-decoration-color: currentColor; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 ::selection { background: #ede4d9; }
 
-h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.15; }
+h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 
 .wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding-inline: var(--pad); }
-.wrap--narrow { max-width: 74ch; }
 
 .skip-link {
 	position: absolute; left: -9999px; top: 0;
@@ -74,11 +72,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 }
 
 .brand { grid-area: brand; display: inline-flex; }
-.brand img { display: block; height: 30px; width: auto; }
+.brand img { display: block; height: 28px; width: auto; }
 
 .nav { grid-area: nav; display: flex; gap: 1.75rem; }
 .nav a {
-	font-size: .8rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+	font-size: .75rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
 	color: var(--ink-soft); text-decoration: none; padding-block: .35rem;
 	border-bottom: 1px solid transparent;
 }
@@ -87,7 +85,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 
 .langs { grid-area: langs; display: flex; gap: .9rem; }
 .langs a {
-	font-size: .72rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+	font-size: .7rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
 	color: var(--ink-soft); text-decoration: none;
 }
 .langs a:hover { color: var(--accent); }
@@ -98,33 +96,32 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 		grid-template-columns: auto auto;
 		grid-template-areas: 'brand langs' 'nav nav';
 		justify-content: space-between;
-		gap: .6rem 1rem;
+		gap: .5rem 1rem;
 	}
-	.nav { gap: 1.5rem; border-top: 1px solid var(--line); padding-top: .5rem; }
+	.nav { gap: 1.5rem; border-top: 1px solid var(--line); padding-top: .45rem; }
 }
 
 /* ---------- главная ---------- */
 
-.hero { padding-block: clamp(2.75rem, 8vw, 5.5rem) clamp(1.5rem, 4vw, 2.5rem); text-align: center; }
+.hero { padding-block: clamp(2.5rem, 7vw, 4.5rem) clamp(1.25rem, 3.5vw, 2.25rem); text-align: center; }
 .hero h1 {
 	margin: 0;
-	font-size: clamp(2.25rem, 7vw, 3.9rem);
-	letter-spacing: -.01em;
+	font-size: clamp(1.75rem, 5vw, 2.75rem);
+	letter-spacing: -.03em;
 }
 .hero p {
-	margin: .9rem auto 0;
+	margin: .7rem auto 0;
 	max-width: 46ch;
 	color: var(--ink-soft);
-	font-size: 1rem;
-	letter-spacing: .01em;
+	font-size: .95rem;
 }
 
 .projects {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(15rem, 20rem));
 	justify-content: center;
-	gap: clamp(1.5rem, 3.5vw, 2.75rem);
-	padding-block: clamp(1.5rem, 4vw, 3rem);
+	gap: clamp(1.5rem, 3.5vw, 2.5rem);
+	padding-block: clamp(1.25rem, 3.5vw, 2.5rem);
 	list-style: none; margin: 0;
 }
 .project { display: block; text-decoration: none; }
@@ -136,26 +133,26 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 }
 .project:hover img { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(28,27,25,.08), 0 22px 50px -20px rgba(28,27,25,.45); }
 .project span {
-	display: block; margin-top: .85rem;
-	font-family: var(--font-display); font-size: 1.2rem; line-height: 1.3;
+	display: block; margin-top: .75rem;
+	font-size: .95rem; font-weight: 500; line-height: 1.4; letter-spacing: -.01em;
 	color: var(--ink);
 }
 .project:hover span { color: var(--accent); }
 
 /* ---------- страница проекта ---------- */
 
-.page-head { padding-block: clamp(2rem, 6vw, 3.5rem) clamp(1rem, 3vw, 2rem); }
+.page-head { padding-block: clamp(1.75rem, 5vw, 3rem) clamp(.85rem, 2.5vw, 1.5rem); }
 .page-head h1 {
 	margin: 0;
-	max-width: 34ch;
-	font-size: clamp(1.85rem, 4.5vw, 3rem);
+	max-width: 36ch;
+	font-size: clamp(1.45rem, 3.2vw, 2.15rem);
 }
 
 .intro {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 	gap: clamp(1.25rem, 3vw, 3rem);
-	padding-bottom: clamp(2rem, 6vw, 4rem);
+	padding-bottom: clamp(2rem, 5.5vw, 3.5rem);
 	color: #4b473f;
 }
 .intro > div { max-width: 34rem; }
@@ -163,31 +160,29 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 .intro > div > :last-child { margin-bottom: 0; }
 
 /* большой текст на главной */
-.essay { padding-bottom: clamp(2.5rem, 6vw, 4.5rem); }
-.essay .single { max-width: 74ch; margin: 0 auto; }
-.essay p, .essay li { line-height: 1.75; }
+.essay { padding-bottom: clamp(2.5rem, 6vw, 4rem); }
+.essay .single { max-width: 72ch; margin: 0 auto; }
+.essay p, .essay li { line-height: 1.7; }
 .essay ul { padding-left: 1.2em; }
-.essay li { margin-bottom: .85em; }
+.essay li { margin-bottom: .8em; }
 .essay .signature {
-	margin-top: 2.5rem; text-align: right;
-	font-family: var(--font-display); font-style: italic; font-size: 1.25rem; color: var(--ink-soft);
+	margin-top: 2.25rem; text-align: right;
+	font-size: .95rem; font-weight: 500; color: var(--ink-soft);
 }
 
 /* ---------- галерея ---------- */
 
 .gallery {
 	display: grid;
-	gap: clamp(2.5rem, 7vw, 5rem);
+	gap: clamp(2.25rem, 6vw, 4.5rem);
 	justify-items: center;
-	padding-bottom: clamp(3rem, 8vw, 6rem);
+	padding-bottom: clamp(3rem, 7vw, 5rem);
 }
 .gallery figure { margin: 0; max-width: 100%; }
 .gallery img {
 	display: block; border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow);
 }
-.gallery figcaption {
-	color: var(--ink-soft); font-size: .95rem; line-height: 1.6;
-}
+.gallery figcaption { color: var(--ink-soft); font-size: .875rem; line-height: 1.6; }
 .gallery figcaption p { margin: 0 0 .5em; }
 .gallery figcaption p:last-child { margin-bottom: 0; }
 
@@ -205,40 +200,20 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.
 	.gallery--captions figcaption { padding-top: .25rem; }
 }
 
-/* ---------- контакты ---------- */
-
-.people {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-	gap: clamp(2rem, 5vw, 3.5rem);
-	padding-bottom: clamp(3rem, 8vw, 5rem);
-}
-.people > div { color: #4b473f; }
-.people .ava {
-	width: 100px; height: 100px; object-fit: cover;
-	border-radius: var(--radius); box-shadow: var(--shadow);
-}
-.people h3 { margin: 1.1rem 0 .4rem; font-size: 1.4rem; color: var(--ink); }
-.people h3 a { text-decoration: none; }
-.people h4 { margin: 0 0 1rem; font-family: var(--font-body); font-size: 1rem; font-weight: 500; line-height: 1.8; }
-.people h4 a { text-decoration: none; border-bottom: 1px solid var(--line); }
-.people h4 small { color: var(--ink-soft); font-size: .85em; }
-.people p { margin: 0; }
-
 /* ---------- подвал ---------- */
 
 .site-footer { border-top: 1px solid var(--line); margin-top: auto; }
 .site-footer__inner {
 	display: flex; flex-wrap: wrap; gap: .5rem 2rem; justify-content: space-between;
-	padding-block: 2.25rem;
-	font-size: .85rem; color: var(--ink-soft);
+	padding-block: 2rem;
+	font-size: .8rem; color: var(--ink-soft);
 }
 .site-footer a { text-decoration: none; border-bottom: 1px solid var(--line); }
 
 /* ---------- 404 ---------- */
 
-.notfound { text-align: center; padding-block: clamp(4rem, 15vh, 9rem); }
-.notfound h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); margin: 0 0 1rem; }
+.notfound { text-align: center; padding-block: clamp(4rem, 15vh, 8rem); }
+.notfound h1 { font-size: clamp(2rem, 6vw, 3.25rem); margin: 0 0 1rem; }
 .notfound p { color: var(--ink-soft); }
 
 body { display: flex; flex-direction: column; min-height: 100vh; }
