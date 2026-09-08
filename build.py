@@ -543,20 +543,21 @@ def main():
             pages += 1
 
     default = LANGS[0]
+    site_title = parse_ini(TPL / default / "text.ini").get("title", "")
     (OUT / "index.html").write_text(f"""<!DOCTYPE html>
 <html lang="{default}">
 <head>
 \t<meta charset="utf-8" />
 \t<meta http-equiv="refresh" content="0; url={default}/" />
 \t<link rel="canonical" href="{BASE}/{default}/" />
-\t<title>Yurii Matviichuk. Artist. Designer.</title>
+\t<title>{site_title}</title>
 \t<meta name="description" content="Monumental painting, murals, stained glass and interior design by Yurii Matviichuk." />
-\t<meta property="og:title" content="Yurii Matviichuk. Artist. Designer." />
+\t<meta property="og:title" content="{site_title}" />
 \t<meta property="og:type" content="website" />
 \t<meta property="og:url" content="{BASE}/{default}/" />
 \t<meta property="og:image" content="{BASE}/pix/interior1.jpg" />
 </head>
-<body><p><a href="{default}/">yuram.com.ua</a></p></body>
+<body><p><a href="{default}/">{site_title}</a></p></body>
 </html>
 """, encoding="utf-8")
     (OUT / "404.html").write_text(render_404(), encoding="utf-8")
