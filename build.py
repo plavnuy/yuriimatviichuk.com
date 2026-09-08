@@ -11,6 +11,7 @@ Styling lives in docs/inc/main.css and is never overwritten by this script.
 
 import hashlib
 import html as html_mod
+import json
 import re
 import shutil
 import struct
@@ -47,6 +48,28 @@ DOMAIN = "yuriimatviichuk.com"     # custom domain, written to docs/CNAME
 REPO = "yuriimatviichuk.com"          # repository name; the 404 page needs it in a subdirectory
 
 SUBSET = {"uk": "cyrillic"}      # which font subset to preload
+BASE = f"https://{DOMAIN}"       # absolute URLs are required by canonical, hreflang and Open Graph
+
+OG_LOCALE = {"en": "en_GB", "uk": "uk_UA", "fr": "fr_FR", "nl": "nl_NL"}
+
+# these two pages show the work of colleagues, not of Yurii
+PAGE_AUTHOR = {"valeriy-vasiliev": "Valeriy Vasiliev", "iryna-ganina": "Iryna Ganina"}
+
+# used as a description when a page carries no text of its own
+DESC_FALLBACK = {
+    "en": "{heading} — work by {name}, monumental painter and interior designer.",
+    "uk": "{heading} — роботи {name}, монументальний живопис та дизайн інтер'єрів.",
+    "fr": "{heading} — travaux de {name}, peinture monumentale et design d'intérieur.",
+    "nl": "{heading} — werk van {name}, monumentale schilderkunst en interieurontwerp.",
+}
+
+# the same, for the pages of colleagues
+DESC_FALLBACK_OTHER = {
+    "en": "{heading} — photographs of the work.",
+    "uk": "{heading} — фотографії робіт.",
+    "fr": "{heading} — photographies des travaux.",
+    "nl": "{heading} — foto's van het werk.",
+}
 
 SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
              "fr": "Aller au contenu", "nl": "Naar de inhoud"}
@@ -190,6 +213,30 @@ def gallery_html(page, lang, prefix, heading):
             + "\n".join(figures) + "\n</div>\n</div>")
 
 
+def plain_text(fragment, limit=158):
+    """Strips a fragment down to plain text for a meta description."""
+    t = html_mod.unescape(re.sub(r"<[^>]+>", " ", fragment))
+    t = re.sub(r"\s+", " ", t).strip()
+    if len(t) <= limit:
+        return t
+    return t[:limit].rsplit(" ", 1)[0].rstrip(" ,.;:—-") + "…"
+
+
+def page_url(lang, page):
+    """Absolute address of a page."""
+    return f"{BASE}/{lang}/" + (f"{page}/" if page else "")
+
+
+def first_photo(page):
+    """First photograph of a page — used as the Open Graph image."""
+    if page in GALLERIES:
+        for rel_dir, _ in GALLERIES[page][1]:
+            images = list_images(rel_dir)
+            if images:
+                return f"{rel_dir}/{images[0]}"
+    return "pix/interior1.jpg"
+
+
 # ---------- assembling a page ----------
 
 def render(lang, page, prefix):
@@ -220,6 +267,21 @@ def render(lang, page, prefix):
         body.append('<div class="wrap">\n<div class="projects">\n'
                     + "\n".join(tiles) + '\n</div>\n</div>')
         doc_title = site_title
+        description = plain_text(read_content(lang, "bio")) or site_title
+        og_photo = "pix/art/001.jpg"     # 800×406 — под пропорции соцсетей
+        schema = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {"@type": "WebSite", "@id": f"{BASE}/#website", "url": f"{BASE}/",
+                 "name": site_title, "inLanguage": lang,
+                 "publisher": {"@id": f"{BASE}/#person"}},
+                {"@type": "Person", "@id": f"{BASE}/#person", "name": name,
+                 "jobTitle": tagline.rstrip(".").replace(". ", ", "), "url": page_url(lang, ""),
+                 "email": f"mailto:{EMAIL}", "telephone": PHONE_TEL,
+                 "description": description,
+                 "image": f"{BASE}/pix/ava-yura.jpg"},
+            ],
+        }
     else:
         show_text, _ = GALLERIES[page]
         heading = header
@@ -232,7 +294,28 @@ def render(lang, page, prefix):
         gallery = gallery_html(page, lang, prefix, heading)
         if gallery:
             body.append(gallery)
-        doc_title = f"{heading} — {site_title}" if heading else site_title
+        doc_title = f"{heading} — {name}" if heading else site_title
+        page_text = read_content(lang, page) if show_text else ""
+        author = PAGE_AUTHOR.get(page)
+        fallback = DESC_FALLBACK_OTHER if author else DESC_FALLBACK
+        description = plain_text(page_text) or fallback[lang].format(
+            heading=heading, name=name)
+        og_photo = first_photo(page)
+        gallery_images = [f"{BASE}/{rel}/{img}"
+                          for rel, _ in GALLERIES[page][1]
+                          for img in list_images(rel)]
+        schema = {
+            "@context": "https://schema.org",
+            "@type": "ImageGallery",
+            "name": heading,
+            "description": description,
+            "url": page_url(lang, page),
+            "inLanguage": lang,
+            "isPartOf": {"@id": f"{BASE}/#website"},
+            "author": ({"@type": "Person", "name": author} if author
+                       else {"@id": f"{BASE}/#person"}),
+            "image": gallery_images[:12],
+        }
 
     current = ' aria-current="true"'
     langs = "\n".join(
@@ -241,20 +324,44 @@ def render(lang, page, prefix):
         + f'>{l}</a>'
         for l in LANGS)
     alternates = "\n".join(
-        f'\t<link rel="alternate" hreflang="{l}" href="{prefix}{l}/{page + "/" if page else ""}" />'
+        f'\t<link rel="alternate" hreflang="{l}" href="{page_url(l, page)}" />'
         for l in LANGS)
+    alternates += f'\n\t<link rel="alternate" hreflang="x-default" href="{page_url(LANGS[0], page)}" />'
+    og_alt_locales = "\n".join(
+        f'\t<meta property="og:locale:alternate" content="{OG_LOCALE[l]}" />'
+        for l in LANGS if l != lang)
+    page_author = PAGE_AUTHOR.get(page, name)
+    og_w, og_h = image_size(OUT / og_photo)
+    ld_json = json.dumps(schema, ensure_ascii=False, indent=1).replace("</", "<\\/")
+    esc = lambda t: html_mod.escape(t, quote=True)
 
     return f"""<!DOCTYPE html>
 <html lang="{lang}">
 <head>
 \t<meta charset="utf-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1" />
-\t<title>{html_mod.escape(doc_title, quote=False)}</title>
-\t<meta name="description" content="{html_mod.escape(doc_title, quote=True)}" />
-\t<meta property="og:title" content="{html_mod.escape(doc_title, quote=True)}" />
-\t<meta property="og:type" content="website" />
-\t<meta property="og:image" content="{prefix}pix/interior1.jpg" />
+\t<title>{esc(doc_title)}</title>
+\t<meta name="description" content="{esc(description)}" />
+\t<meta name="author" content="{esc(page_author)}" />
+\t<link rel="canonical" href="{page_url(lang, page)}" />
 {alternates}
+
+\t<meta property="og:site_name" content="{esc(name)}" />
+\t<meta property="og:type" content="website" />
+\t<meta property="og:title" content="{esc(doc_title)}" />
+\t<meta property="og:description" content="{esc(description)}" />
+\t<meta property="og:url" content="{page_url(lang, page)}" />
+\t<meta property="og:locale" content="{OG_LOCALE[lang]}" />
+{og_alt_locales}
+\t<meta property="og:image" content="{BASE}/{og_photo}" />
+\t<meta property="og:image:width" content="{og_w}" />
+\t<meta property="og:image:height" content="{og_h}" />
+\t<meta property="og:image:alt" content="{esc(doc_title)}" />
+\t<meta name="twitter:card" content="summary_large_image" />
+
+\t<script type="application/ld+json">
+{ld_json}
+\t</script>
 \t<link rel="icon" href="{prefix}img/logo.png" type="image/png" />
 \t<link rel="preload" href="{prefix}fonts/inter-400-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
 \t<link rel="preload" href="{prefix}fonts/inter-600-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
@@ -304,6 +411,7 @@ def render_404():
 \t<meta charset="utf-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1" />
 \t<title>404 — {txt.get('title', '')}</title>
+\t<meta name="robots" content="noindex" />
 \t<style>
 \t\tbody {{ margin: 0; min-height: 100vh; display: grid; align-content: center;
 \t\t\tbackground: #faf9f7; color: #1c1b19; padding: 2rem clamp(1.25rem, 4vw, 3rem);
@@ -386,6 +494,29 @@ def write_old_url_redirects():
     return made
 
 
+def write_sitemap():
+    """Sitemap listing every page in every language, with the language
+    alternates spelled out for each address."""
+    urls = []
+    for lang in LANGS:
+        for page in [""] + PAGES:
+            alts = "\n".join(
+                f'\t\t<xhtml:link rel="alternate" hreflang="{l}" href="{page_url(l, page)}" />'
+                for l in LANGS)
+            alts += (f'\n\t\t<xhtml:link rel="alternate" hreflang="x-default"'
+                     f' href="{page_url(LANGS[0], page)}" />')
+            urls.append(f'\t<url>\n\t\t<loc>{page_url(lang, page)}</loc>\n{alts}\n\t</url>')
+    (OUT / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+        '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+        + "\n".join(urls) + "\n</urlset>\n", encoding="utf-8")
+    (OUT / "robots.txt").write_text(
+        "User-agent: *\nAllow: /\n\n"
+        f"Sitemap: {BASE}/sitemap.xml\n", encoding="utf-8")
+    return len(urls)
+
+
 def main():
     global CSS_VERSION
     CSS_VERSION = css_version()
@@ -414,8 +545,13 @@ def main():
 <head>
 \t<meta charset="utf-8" />
 \t<meta http-equiv="refresh" content="0; url={default}/" />
-\t<link rel="canonical" href="{default}/" />
+\t<link rel="canonical" href="{BASE}/{default}/" />
 \t<title>Yurii Matviichuk. Artist. Designer.</title>
+\t<meta name="description" content="Monumental painting, murals, stained glass and interior design by Yurii Matviichuk." />
+\t<meta property="og:title" content="Yurii Matviichuk. Artist. Designer." />
+\t<meta property="og:type" content="website" />
+\t<meta property="og:url" content="{BASE}/{default}/" />
+\t<meta property="og:image" content="{BASE}/pix/interior1.jpg" />
 </head>
 <body><p><a href="{default}/">yuram.com.ua</a></p></body>
 </html>
@@ -424,8 +560,10 @@ def main():
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
     (OUT / "CNAME").write_text(DOMAIN + "\n", encoding="utf-8")
     redirects = write_old_url_redirects()
+    listed = write_sitemap()
     print(f"built: {pages} pages ({', '.join(LANGS)}) + index.html + 404.html"
-          f" + {redirects} redirects from old addresses")
+          f" + {redirects} redirects from old addresses;"
+          f" sitemap.xml lists {listed} addresses")
 
 
 if __name__ == "__main__":
