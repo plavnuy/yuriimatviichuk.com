@@ -1,8 +1,8 @@
-/* Сайт Юрия Матвийчука — оформление.
-   Шрифт один на весь сайт: Inter, без засечек (локальная копия в docs/fonts/).
-   Заголовки отличаются весом и плотным трекингом, не гарнитурой.
-   Вёрстка адаптивная: одна колонка на телефоне, сетки на планшете и десктопе.
-   Правится вручную; build.py этот файл не перезаписывает. */
+/* Styling for the whole site.
+   One typeface throughout: Inter, a local copy in docs/fonts/. Headings differ
+   by weight and tighter tracking, not by family.
+   Responsive: a single column on phones, grids on tablets and desktops.
+   Edited by hand; build.py never overwrites this file. */
 
 :root {
 	--paper: #faf9f7;
@@ -14,11 +14,12 @@
 
 	--font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-	/* колонка сайта — 1000px: ровно ширина самой большой фотографии в галереях,
-	   поэтому плитки, фото и текст стоят в одних границах и ничего не растягивается */
+	/* the site column is 1000px: exactly the width of the largest photograph in
+	   the galleries, so tiles, photos and text share one edge and nothing is
+	   ever scaled up */
 	--content: 1000px;
 	--wrap: calc(var(--content) + 6rem);
-	--measure: 36rem;          /* ширина текстовой колонки — одна на весь сайт */
+	--measure: 36rem;          /* one text measure for the whole site */
 	--pad: clamp(1.25rem, 4vw, 3rem);
 	--radius: 3px;
 	--shadow: 0 1px 2px rgba(28, 27, 25, .06), 0 14px 40px -18px rgba(28, 27, 25, .35);
@@ -28,8 +29,8 @@
 
 html {
 	-webkit-text-size-adjust: 100%;
-	scrollbar-gutter: stable;      /* место под полосу прокрутки зарезервировано,
-	                                  иначе переход на длинную страницу дёргает вёрстку */
+	scrollbar-gutter: stable;      /* room for the scrollbar is always reserved,
+	                                  otherwise moving to a long page shifts the layout */
 }
 
 body {
@@ -66,7 +67,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 .skip-link:focus { left: .5rem; top: .5rem; }
 
-/* ---------- шапка: логотип слева, телефон и почта справа ---------- */
+/* ---------- header: logotype left, phone and email right ---------- */
 
 .site-header {
 	position: sticky; top: 0; z-index: 10;
@@ -76,8 +77,8 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 
 .site-header__inner {
-	/* flex-wrap, а не точка перелома: контакты сами уходят строкой ниже,
-	   когда рядом с логотипом им уже не хватает места */
+	/* flex-wrap rather than a breakpoint: the contacts drop to their own line
+	   as soon as there is no room for them beside the logotype */
 	display: flex; flex-wrap: wrap; align-items: center;
 	gap: .35rem 1.75rem;
 	padding-block: .75rem;
@@ -86,9 +87,9 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .brand { display: inline-flex; }
 .brand img { display: block; height: 33px; width: auto; }
 
-/* телефон и почта — вверху справа */
+/* phone and email, top right */
 .contacts {
-	margin-left: auto;                     /* всегда у правого края своей строки */
+	margin-left: auto;                     /* always at the right edge of its line */
 	display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .2rem 1.25rem;
 	font-size: .8rem;
 }
@@ -102,9 +103,9 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .langs a:hover { color: var(--accent); }
 .langs a[aria-current] { color: var(--ink); border-bottom: 1px solid var(--accent); }
 
-/* ---------- главная ---------- */
+/* ---------- home page ---------- */
 
-/* плитки стоят по центру окна: свободное место делится сверху и снизу */
+/* tiles sit in the middle of the window: spare room is split top and bottom */
 .main--home { display: grid; align-content: center; }
 
 .projects {
@@ -132,7 +133,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 @media (max-width: 60rem) { .projects { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 34rem) { .projects { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---------- страница проекта ---------- */
+/* ---------- project page ---------- */
 
 .page-head { padding-block: clamp(1.6rem, 4.5vw, 2.75rem) clamp(.75rem, 2vw, 1.25rem); }
 .page-head h1 {
@@ -152,7 +153,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .intro p { margin: 0 0 1em; }
 .intro > div > :last-child { margin-bottom: 0; }
 
-/* ---------- галерея ---------- */
+/* ---------- gallery ---------- */
 
 .gallery {
 	display: grid;
@@ -168,7 +169,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .gallery figcaption p { margin: 0 0 .5em; }
 .gallery figcaption p:last-child { margin-bottom: 0; }
 
-/* галерея с подписями: подпись сбоку на широком экране, под фото на узком */
+/* captioned gallery: caption beside the photo when wide, below it when narrow */
 .gallery--captions figure {
 	display: grid;
 	grid-template-columns: minmax(0, auto) minmax(11rem, 15rem);
@@ -181,7 +182,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 	.gallery--captions figcaption { padding-top: .25rem; }
 }
 
-/* ---------- подвал: биография мелким кеглем, рядом почта ---------- */
+/* ---------- footer: the biography in small type, languages beside it ---------- */
 
 .site-footer { border-top: 1px solid var(--line); margin-top: auto; }
 .site-footer__inner {

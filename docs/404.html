@@ -20,7 +20,7 @@
 		<p>This page does not exist. <a id="home" href="/">Go to the home page</a>.</p>
 	</main>
 	<script>
-		// сайт может обслуживаться из подкаталога вида /yuriimatviichuk.com/ — учитываем это
+		// the site may be served from a /yuriimatviichuk.com/ subdirectory
 		var seg = location.pathname.split('/').filter(Boolean);
 		if (seg[0] === 'yuriimatviichuk.com') document.getElementById('home').href = '/yuriimatviichuk.com/';
 	</script>

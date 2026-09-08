@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Собирает статический сайт yuram.com.ua из tpl/ в docs/ (для GitHub Pages).
+"""Builds the static site from tpl/ into docs/ for GitHub Pages.
 
-Страницы генерируются для каждого языка: /<lang>/ и /<lang>/<page>/.
-Галереи собираются из содержимого docs/pix/<каталог>/, подписи к фото —
-из tpl/<lang>/<page>.ini. Все пути в HTML относительные, поэтому сайт
-одинаково работает и в корне домена, и в подкаталоге user.github.io/repo/.
+One set of pages per language: /<lang>/ and /<lang>/<page>/. Galleries are
+built from whatever sits in docs/pix/<folder>/; captions come from
+tpl/<lang>/<page>.ini. Every path in the HTML is relative, so the site works
+both at a domain root and in a subdirectory such as user.github.io/repo/.
 
-Оформление живёт в docs/inc/main.css и этим скриптом не перезаписывается.
+Styling lives in docs/inc/main.css and is never overwritten by this script.
 """
 
 import hashlib
@@ -20,12 +20,12 @@ ROOT = Path(__file__).parent
 TPL = ROOT / "tpl"
 OUT = ROOT / "docs"
 
-LANGS = ["en", "uk", "fr", "nl"]          # первый — базовый; es отключён, как и в исходной версии
+LANGS = ["en", "uk", "fr", "nl"]          # first one is the default; es exists in tpl/ but is off
 PAGES = ["neo-baroque", "askold-church", "art-nouveau", "renaissance",
          "functionalism", "works", "valeriy-vasiliev", "iryna-ganina"]
 
-# старые адреса 2015 года -> новые: со старых ставим страницы-перенаправления,
-# чтобы ссылки, которые где-то сохранились, продолжали работать
+# old 2015 addresses -> current ones; redirect stubs are generated for the old
+# paths so that links saved anywhere out there keep working
 OLD_PAGES = {
     "neobarocco": "neo-baroque",
     "askoldova": "askold-church",
@@ -35,23 +35,23 @@ OLD_PAGES = {
     "ira": "iryna-ganina",
     "renaissance": "renaissance",
     "functionalism": "functionalism",
-    "contact": "",                 # страницы контактов больше нет — на главную
+    "contact": "",                 # the contacts page is gone; send it to the home page
 }
 OLD_LANGS = ["ru", "uk", "fr", "nl", "es", "en"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
 EMAIL = "uuuram@gmail.com"
-PHONE = "+38 067 930 31 20"       # как показывать
-PHONE_TEL = "+380679303120"       # как звонить
-CSS_VERSION = ""            # заполняется в main() хешем файлов оформления
-DOMAIN = "yuriimatviichuk.com"     # свой домен: попадает в docs/CNAME
-REPO = "yuriimatviichuk.com"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
+PHONE = "+38 067 930 31 20"       # as displayed
+PHONE_TEL = "+380679303120"       # as dialled
+CSS_VERSION = ""            # filled in main() with a hash of the stylesheets
+DOMAIN = "yuriimatviichuk.com"     # custom domain, written to docs/CNAME
+REPO = "yuriimatviichuk.com"          # repository name; the 404 page needs it in a subdirectory
 
-SUBSET = {"uk": "cyrillic"}      # какое подмножество шрифта грузить заранее
+SUBSET = {"uk": "cyrillic"}      # which font subset to preload
 
 SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
              "fr": "Aller au contenu", "nl": "Naar de inhoud"}
 
-# страница -> (показывать текст?, [(каталог с фото, ini с подписями)])
+# page -> (show its text?, [(photo folder, ini file holding captions)])
 GALLERIES = {
     "neo-baroque":      (True,  [("pix/neobarocco", None)]),
     "askold-church":    (True,  [("pix/askoldova", None), ("pix/askoldova/process", None)]),
@@ -63,7 +63,7 @@ GALLERIES = {
     "iryna-ganina":     (False, [("pix/ira", "iryna-ganina")]),
 }
 
-# плитки на главной: страница, фото, ключ подписи в text.ini
+# home page tiles: page, photo, caption key in text.ini
 TILES = [
     ("neo-baroque",   "pix/interior1.jpg", "title1"),
     ("askold-church", "pix/askoldova.jpg", "title2"),
@@ -74,11 +74,11 @@ TILES = [
 ]
 
 
-# ---------- чтение исходников ----------
+# ---------- reading the sources ----------
 
 def parse_ini(path):
-    """Аналог PHP parse_ini_file: `ключ = значение`, значение может быть
-    в кавычках и продолжаться на следующих строках."""
+    """Same shape as PHP parse_ini_file: `key = value`, where a value may be
+    quoted and may continue on the following lines."""
     values = {}
     if not path.is_file():
         return values
@@ -94,7 +94,7 @@ def parse_ini(path):
             buf.append(line.strip())
         joined = "\n".join(buf).strip()
         if joined.startswith('"') and not (joined.endswith('"') and len(joined) > 1):
-            continue                       # кавычка не закрыта — значение продолжается
+            continue                       # quote still open: the value continues
         if joined.startswith('"') and joined.endswith('"'):
             joined = joined[1:-1]
         values[key] = joined.strip()
@@ -112,7 +112,7 @@ def has_text(fragment):
 
 
 def list_images(rel_dir):
-    """Каталоги с фото лежат внутри docs/ — это и есть корень сайта."""
+    """Photo folders live inside docs/, which is the site root."""
     d = OUT / rel_dir
     if not d.is_dir():
         return []
@@ -121,8 +121,8 @@ def list_images(rel_dir):
 
 
 def image_size(path):
-    """Размеры JPEG/PNG/GIF без сторонних библиотек — нужны атрибуты width и
-    height, иначе страница «прыгает» во время загрузки фото."""
+    """JPEG/PNG/GIF dimensions without any third-party library: width and
+    height attributes keep the page from jumping while photos load."""
     data = path.read_bytes()
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         w, h = struct.unpack(">II", data[16:24])
@@ -130,7 +130,7 @@ def image_size(path):
     if data[:6] in (b"GIF87a", b"GIF89a"):
         w, h = struct.unpack("<HH", data[6:10])
         return w, h
-    if data[:2] == b"\xff\xd8":                      # JPEG: ищем маркер SOF
+    if data[:2] == b"\xff\xd8":                      # JPEG: look for the SOF marker
         i = 2
         while i < len(data) - 9:
             if data[i] != 0xFF:
@@ -149,12 +149,12 @@ def image_size(path):
     return None, None
 
 
-# ---------- подготовка фрагментов ----------
+# ---------- preparing fragments ----------
 
 def prepare(fragment, prefix, lang):
-    """Готовит текстовый фрагмент из tpl/ к вставке: убирает пустые колонки,
-    делает пути относительными, ссылки на страницы — рабочими,
-    телефоны — кликабельными на мобильных (callto: давно не работает)."""
+    """Gets a fragment from tpl/ ready to embed: drops empty columns, makes
+    paths relative, fixes links between pages, and turns phone numbers into
+    tel: links (callto: stopped working years ago)."""
     fragment = re.sub(r"<div class='(?:col\d|far col\d)'>\s*(?:<p>\s*</p>\s*)?</div>\s*", "", fragment)
     fragment = fragment.replace("callto:", "tel:")
     fragment = re.sub(r'(src|href)=(["\'])/(pix|img|inc)/',
@@ -190,7 +190,7 @@ def gallery_html(page, lang, prefix, heading):
             + "\n".join(figures) + "\n</div>\n</div>")
 
 
-# ---------- сборка страницы ----------
+# ---------- assembling a page ----------
 
 def render(lang, page, prefix):
     txt = parse_ini(TPL / lang / "text.ini")
@@ -293,9 +293,9 @@ def render(lang, page, prefix):
 
 
 def render_404():
-    """Отдаётся при любом неверном адресе, на любом уровне вложенности, поэтому
-    страница полностью самодостаточна: стили внутри, а ссылка на главную
-    вычисляется из адреса (сайт может лежать в подкаталоге GitHub Pages)."""
+    """Served for any wrong address, at any depth, so the page is entirely
+    self-contained: styles inline, and the link home is derived from the
+    current path (the site may live in a GitHub Pages subdirectory)."""
     lang = LANGS[0]
     txt = parse_ini(TPL / lang / "text.ini")
     return f"""<!DOCTYPE html>
@@ -320,7 +320,7 @@ def render_404():
 \t\t<p>This page does not exist. <a id="home" href="/">Go to the home page</a>.</p>
 \t</main>
 \t<script>
-\t\t// сайт может обслуживаться из подкаталога вида /{REPO}/ — учитываем это
+\t\t// the site may be served from a /{REPO}/ subdirectory
 \t\tvar seg = location.pathname.split('/').filter(Boolean);
 \t\tif (seg[0] === '{REPO}') document.getElementById('home').href = '/{REPO}/';
 \t</script>
@@ -330,8 +330,8 @@ def render_404():
 
 
 def css_version():
-    """Короткий хеш от файлов оформления — подставляется в адрес CSS, чтобы
-    браузер не показывал старую версию из кэша после правок."""
+    """Short hash of the stylesheets, appended to their URLs so a browser
+    cannot serve a stale copy after they change."""
     h = hashlib.md5()
     for name in ("fonts.css", "main.css"):
         f = OUT / "inc" / name
@@ -341,7 +341,7 @@ def css_version():
 
 
 def redirect_page(target, title="Yurii Matviichuk"):
-    """Крошечная страница-перенаправление для старого адреса."""
+    """A tiny redirect page standing in for an old address."""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -357,8 +357,8 @@ def redirect_page(target, title="Yurii Matviichuk"):
 
 
 def write_old_url_redirects():
-    """Адреса старого сайта (2015) ведут на соответствующие новые страницы,
-    чтобы сохранившиеся где-то ссылки не упирались в 404."""
+    """Point the old 2015 addresses at their current pages so that links
+    saved anywhere out there do not land on a 404."""
     default = LANGS[0]
     made = 0
     for old, new in OLD_PAGES.items():
@@ -377,7 +377,7 @@ def write_old_url_redirects():
             made += 1
         for old, new in OLD_PAGES.items():
             d = OUT / lang / old
-            if d.exists():                 # по этому адресу уже стоит настоящая страница
+            if d.exists():                 # a real page already occupies this address
                 continue
             d.mkdir(parents=True, exist_ok=True)
             target = f"../../{target_lang}/" + (f"{new}/" if new else "")
@@ -424,8 +424,8 @@ def main():
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
     (OUT / "CNAME").write_text(DOMAIN + "\n", encoding="utf-8")
     redirects = write_old_url_redirects()
-    print(f"собрано: {pages} страниц ({', '.join(LANGS)}) + index.html + 404.html"
-          f" + {redirects} перенаправлений со старых адресов")
+    print(f"built: {pages} pages ({', '.join(LANGS)}) + index.html + 404.html"
+          f" + {redirects} redirects from old addresses")
 
 
 if __name__ == "__main__":

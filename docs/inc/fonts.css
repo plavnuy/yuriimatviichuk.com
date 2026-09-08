@@ -1,7 +1,7 @@
-/* Шрифт сайта, локальная копия (Inter, лицензия OFL).
-   Подмножества: latin, latin-ext, cyrillic, cyrillic-ext.
-   font-display: optional вместе с preload в <head> — чтобы страница не
-   перерисовывалась и не «прыгала», когда шрифт догрузился. */
+/* Site typeface, a local copy of Inter (OFL licence).
+   Subsets: latin, latin-ext, cyrillic, cyrillic-ext.
+   font-display: optional together with preload in <head> keeps the page from
+   being repainted — and jumping — once the font arrives. */
 
 @font-face {
 	font-family: 'Inter';

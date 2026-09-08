@@ -1,71 +1,40 @@
 # yuriimatviichuk.com
 
-Сайт художника и дизайнера Юрия Матвийчука — монументальная живопись,
-роспись, витраж и дизайн интерьеров.
+Portfolio of Yurii Matviichuk — monumental painting, murals, stained glass and
+interior design. Published with GitHub Pages from `docs/`.
 
-Публикуется через GitHub Pages из каталога `docs/` на домене
-**yuriimatviichuk.com** (домен задан файлом `docs/CNAME`).
-
-Адреса старого сайта (`/neobarocco/`, `/ru/art/`, `/contact/` и прочие)
-перенаправляются на новые страницы — эти перенаправления генерирует `build.py`
-из словаря `OLD_PAGES`.
-
-## Как это устроено
-
-Изначально сайт работал на PHP (`legacy-php/`), а GitHub Pages умеет только
-статику. Поэтому страницы **генерируются** скриптом:
+## Layout
 
 ```
-tpl/          тексты и подписи по языкам — единственное место для правок
-docs/pix/     фотографии работ, из них собираются галереи
-build.py      генератор: tpl/ + docs/pix/ -> готовые HTML в docs/
-docs/inc/     оформление (main.css) и подключение шрифтов (fonts.css)
-docs/fonts/   локальная копия шрифта Inter
-docs/         собранный сайт (то, что отдаёт GitHub Pages)
-legacy-php/   оригинальные PHP-скрипты 2015 года, для истории
+tpl/         texts and captions per language (en, uk, fr, nl) — edit here
+docs/pix/    photographs; galleries are built from these folders
+docs/inc/    stylesheet
+build.py     generator: tpl/ + docs/pix/ -> HTML in docs/
+legacy-php/  the original 2015 PHP version, kept for reference
 ```
 
-Языки: **en** (базовый), **uk**, **fr**, **nl**. Русская версия удалена
-(остаётся в истории git). Испанские тексты лежат в `tpl/es/`, но язык
-отключён — как и в исходной версии сайта; чтобы включить, добавьте `"es"`
-в список `LANGS` в `build.py`.
+## Editing
 
-Отдельной страницы контактов нет. Телефон и почта выводятся в шапке каждой
-страницы и задаются константами `PHONE`, `PHONE_TEL` и `EMAIL` в `build.py`.
-В подвале — биография художника (`tpl/<язык>/bio.html`) и справа снизу
-переключатель языков. На главной только плитки проектов.
+Text lives in `tpl/<lang>/<page>.html`; headings and project names in
+`tpl/<lang>/text.ini` and `tpl/<lang>/<page>.ini`.
 
-Ширина колонки сайта — 1000 пикселей (переменная `--content` в `main.css`):
-ровно ширина самой большой фотографии в галереях, поэтому плитки, фото и текст
-стоят в одних границах и ни одно фото не растягивается.
+To add a photograph, drop it into the right `docs/pix/<project>/` folder.
+Galleries are ordered by file name, so numbered names work best
+(`001.jpg`, `002.jpg`). An optional caption goes into
+`tpl/<lang>/<page>.ini` as `001.jpg = "oil on canvas (400×300)"`.
 
-К адресам `main.css` и `fonts.css` генератор дописывает `?v=<хеш>`, поэтому
-после правки оформления браузеры сразу показывают новую версию, а не старую
-из кэша.
-
-Оформление правится вручную в `docs/inc/main.css` — генератор этот файл
-не трогает.
-
-## Изменить текст или добавить фото
-
-1. Текст страницы — файл `tpl/<язык>/<страница>.html`.
-   Заголовки и названия проектов — `tpl/<язык>/text.ini` и `tpl/<язык>/<страница>.ini`.
-2. Новое фото — положить в нужный каталог `docs/pix/<проект>/`.
-   Порядок в галерее — по имени файла, поэтому имена лучше нумеровать
-   (`001.jpg`, `002.jpg`). Подпись под фото — строка `имя_файла.jpg = "текст"`
-   в `tpl/<язык>/<страница>.ini`.
-3. Пересобрать и опубликовать:
+Then rebuild and publish:
 
 ```sh
 python3 build.py
-git add -A && git commit -m "что изменилось" && git push
+git add -A && git commit -m "what changed" && git push
 ```
 
-Через минуту-две изменения появятся на сайте.
+The site updates a minute or two later.
 
-## Посмотреть локально
+## Preview locally
 
 ```sh
 python3 build.py
-python3 -m http.server -d docs 8000   # затем открыть http://localhost:8000
+python3 -m http.server -d docs 8000    # http://localhost:8000
 ```
