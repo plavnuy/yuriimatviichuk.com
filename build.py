@@ -278,8 +278,8 @@ def render_404():
 \t<meta name="viewport" content="width=device-width, initial-scale=1" />
 \t<title>404 — {txt.get('title', '')}</title>
 \t<style>
-\t\tbody {{ margin: 0; min-height: 100vh; display: grid; place-items: center;
-\t\t\tbackground: #faf9f7; color: #1c1b19; text-align: center; padding: 2rem;
+\t\tbody {{ margin: 0; min-height: 100vh; display: grid; align-content: center;
+\t\t\tbackground: #faf9f7; color: #1c1b19; padding: 2rem clamp(1.25rem, 4vw, 3rem);
 \t\t\tfont: 400 .9375rem/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
 \t\th1 {{ margin: 0 0 .75rem; font-size: clamp(2.25rem, 9vw, 3.5rem); font-weight: 600;
 \t\t\tletter-spacing: -.03em; line-height: 1; }}
