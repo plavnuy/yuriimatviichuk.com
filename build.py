@@ -21,13 +21,29 @@ TPL = ROOT / "tpl"
 OUT = ROOT / "docs"
 
 LANGS = ["en", "uk", "fr", "nl"]          # первый — базовый; es отключён, как и в исходной версии
-PAGES = ["neobarocco", "askoldova", "modern", "renaissance",
-         "functionalism", "art", "valera", "ira"]
+PAGES = ["neo-baroque", "askold-church", "art-nouveau", "renaissance",
+         "functionalism", "works", "valeriy-vasiliev", "iryna-ganina"]
+
+# старые адреса 2015 года -> новые: со старых ставим страницы-перенаправления,
+# чтобы ссылки, которые где-то сохранились, продолжали работать
+OLD_PAGES = {
+    "neobarocco": "neo-baroque",
+    "askoldova": "askold-church",
+    "modern": "art-nouveau",
+    "art": "works",
+    "valera": "valeriy-vasiliev",
+    "ira": "iryna-ganina",
+    "renaissance": "renaissance",
+    "functionalism": "functionalism",
+    "contact": "",                 # страницы контактов больше нет — на главную
+}
+OLD_LANGS = ["ru", "uk", "fr", "nl", "es", "en"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
 EMAIL = "uuuram@gmail.com"
 PHONE = "+38 067 930 31 20"       # как показывать
 PHONE_TEL = "+380679303120"       # как звонить
 CSS_VERSION = ""            # заполняется в main() хешем файлов оформления
+DOMAIN = "yuriimatviichuk.com"     # свой домен: попадает в docs/CNAME
 REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
 
 SUBSET = {"uk": "cyrillic"}      # какое подмножество шрифта грузить заранее
@@ -37,24 +53,24 @@ SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
 
 # страница -> (показывать текст?, [(каталог с фото, ini с подписями)])
 GALLERIES = {
-    "neobarocco":    (True,  [("pix/neobarocco", None)]),
-    "askoldova":     (True,  [("pix/askoldova", None), ("pix/askoldova/process", None)]),
-    "modern":        (True,  [("pix/modern1", None)]),
-    "renaissance":   (True,  [("pix/renaissance", None)]),
-    "functionalism": (False, [("pix/functionalism1", None)]),
-    "art":           (True,  [("pix/art", "art")]),
-    "valera":        (False, [("pix/valera", "valera")]),
-    "ira":           (False, [("pix/ira", "ira")]),
+    "neo-baroque":      (True,  [("pix/neobarocco", None)]),
+    "askold-church":    (True,  [("pix/askoldova", None), ("pix/askoldova/process", None)]),
+    "art-nouveau":      (True,  [("pix/modern1", None)]),
+    "renaissance":      (True,  [("pix/renaissance", None)]),
+    "functionalism":    (False, [("pix/functionalism1", None)]),
+    "works":            (True,  [("pix/art", "works")]),
+    "valeriy-vasiliev": (False, [("pix/valera", "valeriy-vasiliev")]),
+    "iryna-ganina":     (False, [("pix/ira", "iryna-ganina")]),
 }
 
 # плитки на главной: страница, фото, ключ подписи в text.ini
 TILES = [
-    ("neobarocco",    "pix/interior1.jpg", "title1"),
-    ("askoldova",     "pix/askoldova.jpg", "title2"),
-    ("modern",        "pix/interior2.jpg", "title3"),
+    ("neo-baroque",   "pix/interior1.jpg", "title1"),
+    ("askold-church", "pix/askoldova.jpg", "title2"),
+    ("art-nouveau",   "pix/interior2.jpg", "title3"),
     ("renaissance",   "pix/interior3.jpg", "title4"),
     ("functionalism", "pix/interior4.jpg", "title5"),
-    ("art",           "pix/etc.jpg",       "title6"),
+    ("works",         "pix/etc.jpg",       "title6"),
 ]
 
 
@@ -324,11 +340,57 @@ def css_version():
     return h.hexdigest()[:8]
 
 
+def redirect_page(target, title="Yurii Matviichuk"):
+    """Крошечная страница-перенаправление для старого адреса."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+\t<meta charset="utf-8" />
+\t<meta http-equiv="refresh" content="0; url={target}" />
+\t<link rel="canonical" href="{target}" />
+\t<meta name="robots" content="noindex" />
+\t<title>{title}</title>
+</head>
+<body><p><a href="{target}">{title}</a></p></body>
+</html>
+"""
+
+
+def write_old_url_redirects():
+    """Адреса старого сайта (2015) ведут на соответствующие новые страницы,
+    чтобы сохранившиеся где-то ссылки не упирались в 404."""
+    default = LANGS[0]
+    made = 0
+    for old, new in OLD_PAGES.items():
+        d = OUT / old                      # /neobarocco/ -> /en/neo-baroque/
+        if not d.exists():
+            d.mkdir(parents=True, exist_ok=True)
+            target = f"../{default}/" + (f"{new}/" if new else "")
+            (d / "index.html").write_text(redirect_page(target), encoding="utf-8")
+            made += 1
+    for lang in OLD_LANGS:
+        target_lang = lang if lang in LANGS else default
+        if lang not in LANGS:              # /ru/ -> /en/
+            d = OUT / lang
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "index.html").write_text(redirect_page(f"../{target_lang}/"), encoding="utf-8")
+            made += 1
+        for old, new in OLD_PAGES.items():
+            d = OUT / lang / old
+            if d.exists():                 # по этому адресу уже стоит настоящая страница
+                continue
+            d.mkdir(parents=True, exist_ok=True)
+            target = f"../../{target_lang}/" + (f"{new}/" if new else "")
+            (d / "index.html").write_text(redirect_page(target), encoding="utf-8")
+            made += 1
+    return made
+
+
 def main():
     global CSS_VERSION
     CSS_VERSION = css_version()
 
-    for name in LANGS + ["ru", "es", "index.html", "404.html"]:
+    for name in LANGS + OLD_LANGS + list(OLD_PAGES) + ["index.html", "404.html"]:
         target = OUT / name
         if target.is_dir():
             shutil.rmtree(target)
@@ -353,14 +415,17 @@ def main():
 \t<meta charset="utf-8" />
 \t<meta http-equiv="refresh" content="0; url={default}/" />
 \t<link rel="canonical" href="{default}/" />
-\t<title>Yuriy Matviychuk. Artist. Designer.</title>
+\t<title>Yurii Matviichuk. Artist. Designer.</title>
 </head>
 <body><p><a href="{default}/">yuram.com.ua</a></p></body>
 </html>
 """, encoding="utf-8")
     (OUT / "404.html").write_text(render_404(), encoding="utf-8")
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
-    print(f"собрано: {pages} страниц ({', '.join(LANGS)}) + index.html + 404.html")
+    (OUT / "CNAME").write_text(DOMAIN + "\n", encoding="utf-8")
+    redirects = write_old_url_redirects()
+    print(f"собрано: {pages} страниц ({', '.join(LANGS)}) + index.html + 404.html"
+          f" + {redirects} перенаправлений со старых адресов")
 
 
 if __name__ == "__main__":
