@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<title>404. Not found</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<style>body{font:normal 12px sans-serif;color:#555;background:#eee;text-align:center;padding:15% 1em}h1{font:normal 40px serif}a{color:#666}</style>
+	<title>404 — Yuriy Matviychuk. Artist. Designer.</title>
+	<style>
+		body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+			background: #faf9f7; color: #1c1b19; text-align: center; padding: 2rem;
+			font: 400 1.0625rem/1.65 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+		h1 { margin: 0 0 .75rem; font: 500 clamp(3rem, 12vw, 5rem)/1 Georgia, 'Times New Roman', serif; }
+		p { margin: 0; color: #6b675f; }
+		a { color: #8c5a3c; }
+	</style>
 </head>
 <body>
-	<h1>404. Not found</h1>
-	<p><a href="/">yuram.com.ua</a></p>
+	<main>
+		<h1>404</h1>
+		<p>This page does not exist. <a id="home" href="/">Go to the home page</a>.</p>
+	</main>
+	<script>
+		// сайт может обслуживаться из подкаталога вида /yuram.com.ua/ — учитываем это
+		var seg = location.pathname.split('/').filter(Boolean);
+		if (seg[0] === 'yuram.com.ua') document.getElementById('home').href = '/yuram.com.ua/';
+	</script>
 </body>
 </html>

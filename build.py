@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
-"""Собирает статическую версию yuram.com.ua из tpl/ в docs/ (для GitHub Pages).
+"""Собирает статический сайт yuram.com.ua из tpl/ в docs/ (для GitHub Pages).
 
-Повторяет логику старого PHP (pages.php + tpl/*.php):
-  - страницы для каждого языка: /<lang>/ и /<lang>/<page>/
-  - галереи собираются из содержимого pix/<dir>/
-  - подписи к картинкам берутся из tpl/<lang>/<page>.ini
-Все пути в HTML/CSS делаются относительными, чтобы сайт работал
-и в корне домена, и в подкаталоге (user.github.io/repo/).
+Страницы генерируются для каждого языка: /<lang>/ и /<lang>/<page>/.
+Галереи собираются из содержимого docs/pix/<каталог>/, подписи к фото —
+из tpl/<lang>/<page>.ini. Все пути в HTML относительные, поэтому сайт
+одинаково работает и в корне домена, и в подкаталоге user.github.io/repo/.
+
+Оформление живёт в docs/inc/main.css и этим скриптом не перезаписывается.
 """
 
+import html as html_mod
 import re
 import shutil
+import struct
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 TPL = ROOT / "tpl"
 OUT = ROOT / "docs"
 
-LANGS = ["ru", "uk", "fr", "nl"]          # es отключён так же, как в старом header.php
+LANGS = ["en", "uk", "fr", "nl"]          # первый — базовый; es отключён, как и в исходной версии
 PAGES = ["neobarocco", "askoldova", "modern", "renaissance",
          "functionalism", "art", "valera", "ira", "contact"]
 IMG_EXT = {".jpg", ".jpeg", ".png", ".gif"}
+EMAIL = "uuuram@gmail.com"
+REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
 
-# страница -> (показывать текст?, [(каталог картинок, ini-файл с подписями)])
+SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
+             "fr": "Aller au contenu", "nl": "Naar de inhoud"}
+
+# страница -> (показывать текст?, [(каталог с фото, ini с подписями)])
 GALLERIES = {
     "neobarocco":    (True,  [("pix/neobarocco", None)]),
     "askoldova":     (True,  [("pix/askoldova", None), ("pix/askoldova/process", None)]),
@@ -35,16 +42,27 @@ GALLERIES = {
     "contact":       (True,  []),
 }
 
+# плитки на главной: страница, фото, ключ подписи в text.ini
+TILES = [
+    ("neobarocco",    "pix/interior1.jpg", "title1"),
+    ("askoldova",     "pix/askoldova.jpg", "title2"),
+    ("modern",        "pix/interior2.jpg", "title3"),
+    ("renaissance",   "pix/interior3.jpg", "title4"),
+    ("functionalism", "pix/interior4.jpg", "title5"),
+    ("art",           "pix/etc.jpg",       "title6"),
+]
+
+
+# ---------- чтение исходников ----------
 
 def parse_ini(path):
-    """Аналог PHP parse_ini_file: key = value, значения могут быть в кавычках
-    и продолжаться на следующих строках."""
+    """Аналог PHP parse_ini_file: `ключ = значение`, значение может быть
+    в кавычках и продолжаться на следующих строках."""
     values = {}
     if not path.is_file():
         return values
-    text = path.read_text(encoding="utf-8-sig")
     key, buf = None, []
-    for line in text.splitlines():
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
         if key is None:
             stripped = line.strip()
             if not stripped or stripped.startswith((";", "#")) or "=" not in stripped:
@@ -55,7 +73,7 @@ def parse_ini(path):
             buf.append(line.strip())
         joined = "\n".join(buf).strip()
         if joined.startswith('"') and not (joined.endswith('"') and len(joined) > 1):
-            continue                      # незакрытая кавычка — значение продолжается
+            continue                       # кавычка не закрыта — значение продолжается
         if joined.startswith('"') and joined.endswith('"'):
             joined = joined[1:-1]
         values[key] = joined.strip()
@@ -63,8 +81,17 @@ def parse_ini(path):
     return values
 
 
+def read_content(lang, name):
+    f = TPL / lang / f"{name}.html"
+    return f.read_text(encoding="utf-8-sig") if f.is_file() else ""
+
+
+def has_text(fragment):
+    return bool(re.sub(r"<[^>]+>", "", fragment).strip())
+
+
 def list_images(rel_dir):
-    """Каталоги с картинками живут внутри docs/ (это и есть корень сайта)."""
+    """Каталоги с фото лежат внутри docs/ — это и есть корень сайта."""
     d = OUT / rel_dir
     if not d.is_dir():
         return []
@@ -72,167 +99,247 @@ def list_images(rel_dir):
                   if f.is_file() and f.suffix.lower() in IMG_EXT)
 
 
-def localize(html, prefix, lang):
-    """Абсолютные /pix, /img -> относительные; ссылки на страницы -> /<lang>/<page>/."""
-    html = re.sub(r'(src|href)=(["\'])/(pix|img|inc)/',
-                  lambda m: f'{m.group(1)}={m.group(2)}{prefix}{m.group(3)}/', html)
-    def page_link(m):
-        target = m.group(3)
-        return f'{m.group(1)}={m.group(2)}{prefix}{lang}/{target}/{m.group(2)}'
-    html = re.sub(r'(href)=(["\'])(' + "|".join(PAGES) + r')\2', page_link, html)
-    return html
+def image_size(path):
+    """Размеры JPEG/PNG/GIF без сторонних библиотек — нужны атрибуты width и
+    height, иначе страница «прыгает» во время загрузки фото."""
+    data = path.read_bytes()
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        w, h = struct.unpack(">II", data[16:24])
+        return w, h
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        w, h = struct.unpack("<HH", data[6:10])
+        return w, h
+    if data[:2] == b"\xff\xd8":                      # JPEG: ищем маркер SOF
+        i = 2
+        while i < len(data) - 9:
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            marker = data[i + 1]
+            if marker in (0xD8, 0xD9) or 0xD0 <= marker <= 0xD7:
+                i += 2
+                continue
+            length = struct.unpack(">H", data[i + 2:i + 4])[0]
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                          0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                h, w = struct.unpack(">HH", data[i + 5:i + 9])
+                return w, h
+            i += 2 + length
+    return None, None
 
 
-def read_content(lang, name):
-    f = TPL / lang / f"{name}.html"
-    if not f.is_file():
+# ---------- подготовка фрагментов ----------
+
+def prepare(fragment, prefix, lang):
+    """Готовит текстовый фрагмент из tpl/ к вставке: убирает пустые колонки,
+    делает пути относительными, ссылки на страницы — рабочими,
+    телефоны — кликабельными на мобильных (callto: давно не работает)."""
+    fragment = re.sub(r"<div class='(?:col\d|far col\d)'>\s*(?:<p>\s*</p>\s*)?</div>\s*", "", fragment)
+    fragment = fragment.replace("callto:", "tel:")
+    fragment = re.sub(r'(src|href)=(["\'])/(pix|img|inc)/',
+                      lambda m: f'{m.group(1)}={m.group(2)}{prefix}{m.group(3)}/', fragment)
+    fragment = re.sub(r'(href)=(["\'])(' + "|".join(PAGES) + r')\2',
+                      lambda m: f'{m.group(1)}={m.group(2)}{prefix}{lang}/{m.group(3)}/{m.group(2)}',
+                      fragment)
+    return fragment.strip()
+
+
+def gallery_html(page, lang, prefix, heading):
+    _, galleries = GALLERIES[page]
+    figures, captioned, shown = [], False, 0
+    for rel_dir, ini_name in galleries:
+        subs = parse_ini(TPL / lang / f"{ini_name}.ini") if ini_name else {}
+        for name in list_images(rel_dir):
+            caption = subs.get(name, "")
+            captioned = captioned or bool(caption)
+            w, h = image_size(OUT / rel_dir / name)
+            dims = f' width="{w}" height="{h}"' if w else ""
+            shown += 1
+            loading = "" if shown <= 2 else ' loading="lazy" decoding="async"'
+            figcaption = f"\n\t\t<figcaption>{caption}</figcaption>" if caption else ""
+            alt = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", caption)).strip() or heading
+            figures.append(
+                f'\t<figure>\n\t\t<img src="{prefix}{rel_dir}/{name}"'
+                f' alt="{html_mod.escape(alt, quote=True)}"{dims}{loading} />'
+                f'{figcaption}\n\t</figure>')
+    if not figures:
         return ""
-    return f.read_text(encoding="utf-8-sig")
+    cls = "gallery gallery--captions" if captioned else "gallery"
+    return (f'<div class="wrap">\n<div class="{cls}">\n'
+            + "\n".join(figures) + "\n</div>\n</div>")
 
+
+# ---------- сборка страницы ----------
 
 def render(lang, page, prefix):
     txt = parse_ini(TPL / lang / "text.ini")
     page_ini = parse_ini(TPL / lang / f"{page}.ini") if page else {}
     header = page_ini.get("header", "")
+    site_title = txt.get("title", "")
+    name, _, tagline = site_title.partition(". ")
 
-    rows = []
-
+    body = []
     if page == "":
-        # мозаика из шести проектов + вступительный текст (бывший index.php)
-        tiles = [
-            ("neobarocco",    "pix/interior1.jpg", txt.get("title1", "")),
-            ("askoldova",     "pix/askoldova.jpg", txt.get("title2", "")),
-            ("modern",        "pix/interior2.jpg", txt.get("title3", "")),
-            ("renaissance",   "pix/interior3.jpg", txt.get("title4", "")),
-            ("functionalism", "pix/interior4.jpg", txt.get("title5", "")),
-            ("art",           "pix/etc.jpg",       txt.get("title6", "")),
-        ]
-        cells = []
-        for slug, img, title in tiles:
-            cells.append(
-                f"\t\t<td><a href='{prefix}{lang}/{slug}/'>"
-                f"<img width=\"300\" src='{prefix}{img}' alt='{title}' /><br/>{title}</a></td>")
-        mosaic = ("\t<table class='mosaic'>\n\t<tr>\n"
-                  + "\n".join(cells[:3]) + "\n\t</tr>\n\t<tr>\n"
-                  + "\n".join(cells[3:]) + "\n\t</tr>\n\t</table>")
-        rows.append(f"<tr>\n<td class='main_image'>\n{mosaic}\n</td>\n"
-                    f"<td class='main_text'>\n\t<div class='text'>\n"
-                    f"\t\t<p>{txt.get('index_text', '')}</p>\n\t</div>\n</td>\n</tr>")
-        rows.append("<tr>\n<td class='block_text'>\n"
-                    + localize(read_content(lang, "index"), prefix, lang)
-                    + "\n</td>\n<td class='list_text'></td>\n</tr>")
+        body.append(f'<section class="wrap hero">\n\t<h1>{name}</h1>\n'
+                    f'\t<p>{tagline}</p>\n</section>')
+        tiles = []
+        for slug, img, key in TILES:
+            title = txt.get(key, "")
+            w, h = image_size(OUT / img)
+            dims = f' width="{w}" height="{h}"' if w else ""
+            tiles.append(
+                f'\t<a class="project" href="{prefix}{lang}/{slug}/">\n'
+                f'\t\t<img src="{prefix}{img}" alt=""{dims} />\n'
+                f'\t\t<span>{title}</span>\n\t</a>')
+        body.append('<div class="wrap">\n<div class="projects">\n'
+                    + "\n".join(tiles) + '\n</div>\n</div>')
+        essay = prepare(read_content(lang, "index"), prefix, lang)
+        if has_text(essay):
+            body.append(f'<section class="essay">\n<div class="wrap">\n{essay}\n</div>\n</section>')
+        doc_title = site_title
     else:
-        show_text, galleries = GALLERIES[page]
-        if page != "contact":
-            rows.append(f"<tr>\n<td class='main_image'><h2>{header}</h2></td>\n<td></td>\n</tr>")
+        show_text, _ = GALLERIES[page]
+        heading = header or txt.get("contacts", "") if page == "contact" else header
+        if heading:
+            body.append(f'<div class="wrap page-head">\n\t<h1>{heading}</h1>\n</div>')
         if show_text:
-            rows.append("<tr>\n<td class='block_text'>\n"
-                        + localize(read_content(lang, page), prefix, lang)
-                        + "\n</td>\n<td class='list_text'></td>\n</tr>")
-        counter = 0
-        for rel_dir, ini_name in galleries:
-            subs = parse_ini(TPL / lang / f"{ini_name}.ini") if ini_name else {}
-            images = list_images(rel_dir)
-            for name in images:
-                counter += 1
-                caption = subs.get(name, "")
-                rows.append(
-                    f"<tr>\n\t<td class='list_image'>\n"
-                    f"\t\t<a id='image{counter}' name='image{counter}' href='#image{counter + 1}'>\n"
-                    f"\t\t\t<img src='{prefix}{rel_dir}/{name}' alt='' />\n\t\t</a>\n\t</td>\n"
-                    f"\t<td class='list_text'>{caption}</td>\n</tr>")
+            content = prepare(read_content(lang, page), prefix, lang)
+            if has_text(content):
+                wrapper = "people" if page == "contact" else "intro"
+                body.append(f'<div class="wrap">\n<div class="{wrapper}">\n{content}\n</div>\n</div>')
+        gallery = gallery_html(page, lang, prefix, heading)
+        if gallery:
+            body.append(gallery)
+        doc_title = f"{heading} — {site_title}" if heading else site_title
 
-    title = f"{header} {txt.get('title', '')}".strip()
-    lang_links = " ".join(f"<a href='{prefix}{l}/'>{l}</a>" for l in LANGS)
-    menu = (
-        f"<a href=\"{prefix}{lang}/\"{' class=\"current\"' if page == '' else ''}>"
-        f"{txt.get('projects', '')}</a><br/>\n"
-        f"\t\t\t<a href=\"{prefix}{lang}/contact/\""
-        f"{' class=\"current\"' if page == 'contact' else ''}>{txt.get('contacts', '')}</a>"
-    )
+    current = ' aria-current="page"'
+    nav = "\n".join(
+        f'\t\t\t<a href="{prefix}{lang}/{slug}"'
+        + (current if page == cur else "")
+        + f'>{label}</a>'
+        for slug, cur, label in (("", "", txt.get("projects", "")),
+                                 ("contact/", "contact", txt.get("contacts", ""))))
+    langs = "\n".join(
+        f'\t\t\t<a href="{prefix}{l}/" hreflang="{l}" lang="{l}"'
+        + (current if l == lang else "")
+        + f'>{l}</a>'
+        for l in LANGS)
+    alternates = "\n".join(
+        f'\t<link rel="alternate" hreflang="{l}" href="{prefix}{l}/{page + "/" if page else ""}" />'
+        for l in LANGS)
 
     return f"""<!DOCTYPE html>
 <html lang="{lang}">
 <head>
 \t<meta charset="utf-8" />
-\t<title>{title}</title>
 \t<meta name="viewport" content="width=device-width, initial-scale=1" />
-\t<meta name="description" content="{txt.get('title', '')}" />
-\t<link rel="stylesheet" href="{prefix}inc/main.css" type="text/css" />
+\t<title>{html_mod.escape(doc_title, quote=False)}</title>
+\t<meta name="description" content="{html_mod.escape(doc_title, quote=True)}" />
+\t<meta property="og:title" content="{html_mod.escape(doc_title, quote=True)}" />
+\t<meta property="og:type" content="website" />
+\t<meta property="og:image" content="{prefix}pix/interior1.jpg" />
+{alternates}
+\t<link rel="icon" href="{prefix}img/logo.png" type="image/png" />
+\t<link rel="stylesheet" href="{prefix}inc/fonts.css" />
+\t<link rel="stylesheet" href="{prefix}inc/main.css" />
 </head>
 <body>
-<div class="superheader">
-\t<div class='lang'>{lang_links}</div>
-</div>
-<div id="ALL">
-\t<div class="header">
-\t\t<a class='logo' href='{prefix}{lang}/'><img src='{prefix}img/logo.png' alt='' /></a>
-\t\t<div class='menu'>
-\t\t\t{menu}
+<a class="skip-link" href="#content">{SKIP_LINK[lang]}</a>
+<header class="site-header">
+\t<div class="wrap site-header__inner">
+\t\t<a class="brand" href="{prefix}{lang}/"><img src="{prefix}img/logo.png" width="237" height="46" alt="{html_mod.escape(name, quote=True)}" /></a>
+\t\t<nav class="nav">
+{nav}
+\t\t</nav>
+\t\t<div class="langs">
+{langs}
 \t\t</div>
 \t</div>
+</header>
+<main id="content">
+{chr(10).join(body)}
+</main>
+<footer class="site-footer">
+\t<div class="wrap site-footer__inner">
+\t\t<span>© {name}</span>
+\t\t<a href="mailto:{EMAIL}">{EMAIL}</a>
+\t</div>
+</footer>
+</body>
+</html>
+"""
 
-\t<table class='main'>
-{chr(10).join(rows)}
-\t</table>
-\t<div class="footer"></div>
-</div>
+
+def render_404():
+    """Отдаётся при любом неверном адресе, на любом уровне вложенности, поэтому
+    страница полностью самодостаточна: стили внутри, а ссылка на главную
+    вычисляется из адреса (сайт может лежать в подкаталоге GitHub Pages)."""
+    lang = LANGS[0]
+    txt = parse_ini(TPL / lang / "text.ini")
+    return f"""<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+\t<meta charset="utf-8" />
+\t<meta name="viewport" content="width=device-width, initial-scale=1" />
+\t<title>404 — {txt.get('title', '')}</title>
+\t<style>
+\t\tbody {{ margin: 0; min-height: 100vh; display: grid; place-items: center;
+\t\t\tbackground: #faf9f7; color: #1c1b19; text-align: center; padding: 2rem;
+\t\t\tfont: 400 1.0625rem/1.65 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }}
+\t\th1 {{ margin: 0 0 .75rem; font: 500 clamp(3rem, 12vw, 5rem)/1 Georgia, 'Times New Roman', serif; }}
+\t\tp {{ margin: 0; color: #6b675f; }}
+\t\ta {{ color: #8c5a3c; }}
+\t</style>
+</head>
+<body>
+\t<main>
+\t\t<h1>404</h1>
+\t\t<p>This page does not exist. <a id="home" href="/">Go to the home page</a>.</p>
+\t</main>
+\t<script>
+\t\t// сайт может обслуживаться из подкаталога вида /{REPO}/ — учитываем это
+\t\tvar seg = location.pathname.split('/').filter(Boolean);
+\t\tif (seg[0] === '{REPO}') document.getElementById('home').href = '/{REPO}/';
+\t</script>
 </body>
 </html>
 """
 
 
 def main():
-    for name in ("ru", "uk", "fr", "nl", "index.html", "404.html"):
+    for name in LANGS + ["ru", "es", "index.html", "404.html"]:
         target = OUT / name
         if target.is_dir():
             shutil.rmtree(target)
         elif target.is_file():
             target.unlink()
 
-    written = 0
+    pages = 0
     for lang in LANGS:
         (OUT / lang).mkdir(parents=True, exist_ok=True)
         (OUT / lang / "index.html").write_text(render(lang, "", "../"), encoding="utf-8")
-        written += 1
+        pages += 1
         for page in PAGES:
             d = OUT / lang / page
             d.mkdir(parents=True, exist_ok=True)
             (d / "index.html").write_text(render(lang, page, "../../"), encoding="utf-8")
-            written += 1
+            pages += 1
 
     default = LANGS[0]
-    (OUT / "index.html").write_text(
-        f"""<!DOCTYPE html>
+    (OUT / "index.html").write_text(f"""<!DOCTYPE html>
 <html lang="{default}">
 <head>
 \t<meta charset="utf-8" />
 \t<meta http-equiv="refresh" content="0; url={default}/" />
 \t<link rel="canonical" href="{default}/" />
-\t<title>Юрий Матвийчук. Художник. Дизайнер.</title>
+\t<title>Yuriy Matviychuk. Artist. Designer.</title>
 </head>
 <body><p><a href="{default}/">yuram.com.ua</a></p></body>
 </html>
 """, encoding="utf-8")
-
-    (OUT / "404.html").write_text(
-        """<!DOCTYPE html>
-<html lang="ru">
-<head>
-\t<meta charset="utf-8" />
-\t<title>404. Not found</title>
-\t<meta name="viewport" content="width=device-width, initial-scale=1" />
-\t<style>body{font:normal 12px sans-serif;color:#555;background:#eee;text-align:center;padding:15% 1em}h1{font:normal 40px serif}a{color:#666}</style>
-</head>
-<body>
-\t<h1>404. Not found</h1>
-\t<p><a href="/">yuram.com.ua</a></p>
-</body>
-</html>
-""", encoding="utf-8")
+    (OUT / "404.html").write_text(render_404(), encoding="utf-8")
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
-
-    print(f"docs/: {written} страниц + index.html + 404.html")
+    print(f"собрано: {pages} страниц ({', '.join(LANGS)}) + index.html + 404.html")
 
 
 if __name__ == "__main__":
