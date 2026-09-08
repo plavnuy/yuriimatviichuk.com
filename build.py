@@ -30,6 +30,8 @@ PHONE_TEL = "+380679303120"       # как звонить
 CSS_VERSION = ""            # заполняется в main() хешем файлов оформления
 REPO = "yuram.com.ua"          # имя репозитория: нужно странице 404, когда сайт лежит в подкаталоге
 
+SUBSET = {"uk": "cyrillic"}      # какое подмножество шрифта грузить заранее
+
 SKIP_LINK = {"en": "Skip to content", "uk": "Перейти до вмісту",
              "fr": "Aller au contenu", "nl": "Naar de inhoud"}
 
@@ -181,8 +183,11 @@ def render(lang, page, prefix):
     site_title = txt.get("title", "")
     name, _, tagline = site_title.partition(". ")
 
+    subset = SUBSET.get(lang, "latin")
     bio = prepare(read_content(lang, "bio"), prefix, lang)
     bio = "\n".join("\t\t\t" + line.strip() for line in bio.splitlines() if line.strip())
+
+    main_class = ' class="main--home"' if page == "" else ""
 
     body = []
     if page == "":
@@ -235,6 +240,8 @@ def render(lang, page, prefix):
 \t<meta property="og:image" content="{prefix}pix/interior1.jpg" />
 {alternates}
 \t<link rel="icon" href="{prefix}img/logo.png" type="image/png" />
+\t<link rel="preload" href="{prefix}fonts/inter-400-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
+\t<link rel="preload" href="{prefix}fonts/inter-600-normal-{subset}.woff2" as="font" type="font/woff2" crossorigin />
 \t<link rel="stylesheet" href="{prefix}inc/fonts.css?v={CSS_VERSION}" />
 \t<link rel="stylesheet" href="{prefix}inc/main.css?v={CSS_VERSION}" />
 </head>
@@ -249,7 +256,7 @@ def render(lang, page, prefix):
 \t\t</div>
 \t</div>
 </header>
-<main id="content">
+<main id="content"{main_class}>
 {chr(10).join(body)}
 </main>
 <footer class="site-footer">
@@ -261,7 +268,6 @@ def render(lang, page, prefix):
 \t\t\t<div class="langs">
 {langs}
 \t\t\t</div>
-\t\t\t<span>© {name}</span>
 \t\t</div>
 \t</div>
 </footer>

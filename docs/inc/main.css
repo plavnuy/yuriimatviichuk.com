@@ -26,7 +26,11 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+	-webkit-text-size-adjust: 100%;
+	scrollbar-gutter: stable;      /* место под полосу прокрутки зарезервировано,
+	                                  иначе переход на длинную страницу дёргает вёрстку */
+}
 
 body {
 	margin: 0;
@@ -99,6 +103,9 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 .langs a[aria-current] { color: var(--ink); border-bottom: 1px solid var(--accent); }
 
 /* ---------- главная ---------- */
+
+/* плитки стоят по центру окна: свободное место делится сверху и снизу */
+.main--home { display: grid; align-content: center; }
 
 .projects {
 	display: grid;
@@ -188,11 +195,7 @@ h1, h2, h3 { font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
 }
 .site-footer__bio { max-width: var(--measure); }
 .site-footer__bio p { margin: 0; }
-.site-footer__meta {
-	justify-self: end; align-self: end;
-	display: flex; flex-direction: column; align-items: flex-end; gap: .6rem;
-	text-align: right; white-space: nowrap;
-}
+.site-footer__meta { justify-self: end; align-self: end; white-space: nowrap; }
 .site-footer a { text-decoration: none; border-bottom: 1px solid var(--line); }
 
 @media (max-width: 45rem) {
